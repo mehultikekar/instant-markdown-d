@@ -3,6 +3,7 @@
 
 var MarkdownIt = require('markdown-it');
 var hljs = require('highlight.js');
+var url = require('url');
 var server = require('http').createServer(httpHandler),
     exec = require('child_process').exec,
     io = require('socket.io').listen(server),
@@ -41,15 +42,17 @@ function writeMarkdown(input, output) {
   });
 }
 
+var local_files = ['', 'socket.io', 'github-syntax-highlight.css', 'github-markdown.css'];
+
 function httpHandler(req, res) {
   switch(req.method)
   {
     case 'GET':
-      // Example: /my-repo/raw/master/sub-dir/some.png
-      var githubUrl = req.url.match(/\/[^\/]+\/raw\/[^\/]+\/(.+)/);
-      if (githubUrl) {
+      var p = url.parse(req.url).pathname.split('/');
+      
+      if (local_files.indexOf(p[1]) == -1) {
          // Serve the file out of the current working directory
-        send(req, githubUrl[1])
+         send(req, p.slice(1).join('/'))
          .root(process.cwd())
          .pipe(res);
         return;
