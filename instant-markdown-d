@@ -8,6 +8,7 @@ var server = require('http').createServer(httpHandler),
     exec = require('child_process').exec,
     io = require('socket.io').listen(server),
     send = require('send'),
+    existsSync = require('fs').existsSync,
     server,
     socket;
 
@@ -42,26 +43,15 @@ function writeMarkdown(input, output) {
   });
 }
 
-var local_files = ['', 'socket.io', 'github-syntax-highlight.css', 'github-markdown.css'];
+var cwd = process.cwd();
 
 function httpHandler(req, res) {
   switch(req.method)
   {
     case 'GET':
-      var p = url.parse(req.url).pathname.split('/');
-      
-      if (local_files.indexOf(p[1]) == -1) {
-         // Serve the file out of the current working directory
-         send(req, p.slice(1).join('/'))
-         .root(process.cwd())
-         .pipe(res);
-        return;
-      }
-
-      // Otherwise serve the file from the directory this module is in
-      send(req, req.url)
-        .root(__dirname)
-        .pipe(res);
+      var p = url.parse(req.url).pathname;
+      var root = (existsSync(cwd + p) && p != '/')? cwd: __dirname;
+      send(req, req.url).root(root).pipe(res);
       break;
 
     // case 'HEAD':
@@ -90,7 +80,7 @@ function httpHandler(req, res) {
 io.set('log level', 1);
 io.sockets.on('connection', function(sock){
   socket = sock;
-  process.stdout.write('connection established!');
+  process.stdout.write('connection established!\n');
   writeMarkdown(process.stdin, socket);
   process.stdin.resume();
 });
