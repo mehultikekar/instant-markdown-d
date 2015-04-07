@@ -6,6 +6,7 @@
   <meta http-equiv="Content-Language" content="en">
   <link rel="stylesheet" type="text/css" href="/github-syntax-highlight.css">
   <link rel="stylesheet" type="text/css" href="/github-markdown.css">
+  <link rel="stylesheet" type="text/css" href="/user.css">
   <style>
     .markdown-body {
       min-width: 200px;
@@ -16,7 +17,7 @@
   </style>
   <script src="/socket.io/socket.io.js"></script>
   <script>
-    var socket = io.connect('http://localhost:8090/');
+    var socket = io.connect();
     socket.on('connect', function () {
       socket.on('newContent', function(newHTML) {
         document.querySelector(".markdown-body").innerHTML = newHTML;
