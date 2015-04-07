@@ -4,12 +4,12 @@
 var MarkdownIt = require('markdown-it');
 var hljs = require('highlight.js');
 var url = require('url');
-var server = require('http').createServer(httpHandler),
+var express = require('express');
+var app = express();
+var serveStatic = express.static;
+var server = require('http').Server(app),
     exec = require('child_process').exec,
     io = require('socket.io').listen(server),
-    send = require('send'),
-    existsSync = require('fs').existsSync,
-    server,
     socket;
 
 server.listen(8090);
@@ -43,48 +43,27 @@ function writeMarkdown(input, output) {
   });
 }
 
-var cwd = process.cwd();
+app.use(serveStatic(process.cwd()))
 
-function httpHandler(req, res) {
-  switch(req.method)
-  {
-    case 'GET':
-      var p = url.parse(req.url).pathname;
-      var root = (existsSync(cwd + p) && p != '/')? cwd: __dirname;
-      send(req, req.url).root(root).pipe(res);
-      break;
+app.use(serveStatic(__dirname))
 
-    // case 'HEAD':
-      // res.writeHead(200);
-      // res.end();
-      // exec('open -g http://localhost:8090', function(error, stdout, stderr){
-        // http.request({port: 8090})
-      // });
-      // break;
+app.delete('/', function (req, res) {
+  socket.emit('die');
+  process.exit();
+});
 
-    case 'DELETE':
-      socket.emit('die');
-      process.exit();
-      break;
+app.put('/', function (req, res) {
+  writeMarkdown(req, socket);
+  res.writeHead(200);
+  res.end();
+});
 
-    case 'PUT':
-      writeMarkdown(req, socket);
-      res.writeHead(200);
-      res.end();
-      break;
-
-    default:
-  }
-}
-
-io.set('log level', 1);
-io.sockets.on('connection', function(sock){
+io.on('connection', function(sock){
   socket = sock;
   process.stdout.write('connection established!\n');
   writeMarkdown(process.stdin, socket);
   process.stdin.resume();
 });
-
 
 if (process.platform.toLowerCase().indexOf('darwin') >= 0){
   exec('open -g http://localhost:8090', function(error, stdout, stderr){});
